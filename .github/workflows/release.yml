@@ -1,0 +1,111 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "folder-watch-actor-v*"
+      - "watch-null-sink-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-component
+        run: cargo install cargo-component --locked
+
+      - name: Select child from tag
+        id: child
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          case "$tag" in
+            folder-watch-actor-v*)
+              version="${tag#folder-watch-actor-v}"
+              child="folder-watch-actor"
+              package="patina-ai-child-folder-watch-actor"
+              wasm="patina_ai_child_folder_watch_actor.wasm"
+              ;;
+            watch-null-sink-v*)
+              version="${tag#watch-null-sink-v}"
+              child="watch-null-sink"
+              package="patina-ai-child-watch-null-sink"
+              wasm="patina_ai_child_watch_null_sink.wasm"
+              ;;
+            *)
+              echo "unsupported release tag: $tag" >&2
+              exit 1
+              ;;
+          esac
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "child=$child" >> "$GITHUB_OUTPUT"
+          echo "package=$package" >> "$GITHUB_OUTPUT"
+          echo "wasm=$wasm" >> "$GITHUB_OUTPUT"
+          echo "child_dir=children/$child" >> "$GITHUB_OUTPUT"
+
+      - name: Verify version alignment
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import tomllib
+          from pathlib import Path
+
+          version = os.environ["RELEASE_VERSION"]
+          child_dir = Path(os.environ["CHILD_DIR"])
+          cargo = tomllib.loads((child_dir / "Cargo.toml").read_text())
+          manifest = tomllib.loads((child_dir / "child.toml").read_text())
+          cargo_version = cargo["package"]["version"]
+          child_version = manifest["child"]["version"]
+          if cargo_version != version or child_version != version:
+              raise SystemExit(
+                  f"version mismatch: tag={version} Cargo.toml={cargo_version} child.toml={child_version}"
+              )
+          PY
+        env:
+          RELEASE_VERSION: ${{ steps.child.outputs.version }}
+          CHILD_DIR: ${{ steps.child.outputs.child_dir }}
+
+      - name: Build release component
+        run: cargo component build --release -p "${{ steps.child.outputs.package }}"
+
+      - name: Prepare registry release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_dir="target/patina-release/${{ steps.child.outputs.child }}"
+          mkdir -p "$release_dir"
+          cp "target/wasm32-wasip1/release/${{ steps.child.outputs.wasm }}" "$release_dir/"
+          cp "${{ steps.child.outputs.child_dir }}/child.toml" "$release_dir/child.toml"
+          cd "$release_dir"
+          sha256sum "${{ steps.child.outputs.wasm }}" > "${{ steps.child.outputs.wasm }}.sha256"
+          sha256sum child.toml > child.toml.sha256
+          sha256sum "${{ steps.child.outputs.wasm }}" child.toml > checksums.txt
+
+      - name: Publish GitHub release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.child.outputs.child }} v${{ steps.child.outputs.version }}
+          files: |
+            target/patina-release/${{ steps.child.outputs.child }}/${{ steps.child.outputs.wasm }}
+            target/patina-release/${{ steps.child.outputs.child }}/${{ steps.child.outputs.wasm }}.sha256
+            target/patina-release/${{ steps.child.outputs.child }}/child.toml
+            target/patina-release/${{ steps.child.outputs.child }}/child.toml.sha256
+            target/patina-release/${{ steps.child.outputs.child }}/checksums.txt
