@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "children/folder-watch-actor",
+    "children/watch-null-sink",
+]
+resolver = "2"

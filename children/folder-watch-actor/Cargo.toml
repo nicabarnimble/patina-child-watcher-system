@@ -1,0 +1,42 @@
+[package]
+name = "patina-ai-child-folder-watch-actor"
+version = "0.1.0"
+edition = "2021"
+description = "Reusable folder watch child actor (polling delta emitter)"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+patina-sdk = "0.22.0"
+wit-bindgen = "0.41"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+chrono = { version = "0.4", features = ["serde"] }
+
+[package.metadata.component]
+package = "patina:folder-watch-actor"
+
+[package.metadata.component.target]
+path = "wit"
+world = "folder-watch-actor"
+
+[package.metadata.component.target.dependencies]
+"wasi:clocks" = { path = "wit/deps/clocks.wit" }
+"wasi:filesystem" = { path = "wit/deps/filesystem.wit" }
+"wasi:http" = { path = "wit/deps/http.wit" }
+"wasi:io" = { path = "wit/deps/io" }
+"wasi:keyvalue" = { path = "wit/deps/keyvalue.wit" }
+"wasi:logging" = { path = "wit/deps/logging.wit" }
+"wasi:messaging" = { path = "wit/deps/messaging.wit" }
+"wasi:sql" = { path = "wit/deps/sql.wit" }
+"patina:child" = { path = "wit/deps/patina-child-runtime-types.wit" }
+"patina:connect" = { path = "wit/deps/patina-connect.wit" }
+"patina:events-stream" = { path = "wit/deps/patina-events-stream.wit" }
+"patina:git" = { path = "wit/deps/patina-git.wit" }
+"patina:measure" = { path = "wit/deps/patina-measure.wit" }
+"patina:peer" = { path = "wit/deps/patina-peer.wit" }
+"patina:task" = { path = "wit/deps/patina-task.wit" }
+"patina:watch" = { path = "wit/deps/patina-watch.wit" }
+
