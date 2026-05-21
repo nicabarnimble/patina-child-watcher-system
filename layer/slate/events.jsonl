@@ -1,1 +1,3 @@
 {"created_at":"1779323573","event_type":"archived","payload":{"force":false,"tag":"slate/fix-folder-watch-actor-wit-manifest-drift"},"work_id":"fix-folder-watch-actor-wit-manifest-drift"}
+{"created_at":"1779326871","event_type":"created","payload":{"status":"draft"},"work_id":"refactor-children-for-native-tests"}
+{"created_at":"1779360231","event_type":"completed","payload":{"force":false},"work_id":"refactor-children-for-native-tests"}
