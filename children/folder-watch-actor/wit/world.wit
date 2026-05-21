@@ -1,19 +1,10 @@
 package patina:folder-watch-actor@0.1.0;
 
 world folder-watch-actor {
-    import wasi:http/outgoing-handler@0.2.8;
     import wasi:logging/logging@0.1.0;
     import wasi:keyvalue/store@0.2.0;
-    import patina:connect/connect@0.2.0;
-    import wasi:sql/readwrite@0.1.0;
     import wasi:messaging/producer@0.2.0;
-    import patina:events-stream/events-stream@0.1.0;
     import patina:measure/measure@0.1.0;
-    import patina:task/task@0.1.0;
-    import patina:peer/peer@0.1.0;
-    import patina:git/git@0.1.0;
-    import patina:child/runtime-types@0.1.0;
-    import patina:watch/events@0.1.0;
 
     use patina:child/runtime-types@0.1.0.{child-health};
     use patina:child/runtime-types@0.1.0.{pending-event};

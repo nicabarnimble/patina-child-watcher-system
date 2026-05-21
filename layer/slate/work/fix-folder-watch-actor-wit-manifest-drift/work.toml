@@ -1,0 +1,38 @@
+id = "fix-folder-watch-actor-wit-manifest-drift"
+title = "Fix folder-watch-actor WIT/manifest drift"
+kind = "fix"
+status = "complete"
+human_request = "Define and review a least-authority fix plan for folder-watch-actor diagnostics before changing code"
+allium_anchors = []
+user_alignment = "User requested a Slate first; review and approve the plan before implementation. Goal is least-authority WIT/manifest alignment, not broadening authority just to pass diagnostics."
+belief_refs = []
+proof_plan = [
+  "[x] pai-dev child check local-dev passes for children/folder-watch-actor.",
+  "[x] Existing passing local-dev checks for watch-null-sink remain passing.",
+  "[x] folder-watch-actor Cargo component metadata matches the reduced WIT dependency surface.",
+  "[x] folder-watch-actor still builds after WIT cleanup.",
+  "[x] No new authority is requested unless justified by observed implementation usage.",
+]
+closure_evidence = [
+  "Removed stale folder-watch-actor WIT imports for http, connect, sql, events-stream, task, peer, git, and unused watch/events typed sink import.",
+  "Removed matching stale Cargo component dependency entries and now-unreferenced vendored WIT dependency files while retaining logging, keyvalue, messaging, measure, child runtime types, watch contracts, and WASI filesystem-related dependencies used by implementation/runtime authority.",
+  "Replaced internal use of generated patina:watch file-change/change-kind types with local ObservedChange structs so the child does not import watch/events only for type generation.",
+  "Verified `cargo fmt --all --check`.",
+  "Verified `cargo component build --release -p patina-ai-child-folder-watch-actor`.",
+  "Verified `cargo component build --release -p patina-ai-child-watch-null-sink`.",
+  "Verified `cargo run -p pai-dev --bin pai-dev -- child check local-dev /Users/nicabar/Projects/Patina/patina-child-watcher-system/children/folder-watch-actor` from the Patina repo.",
+  "Verified `cargo run -p pai-dev --bin pai-dev -- child check local-dev /Users/nicabar/Projects/Patina/patina-child-watcher-system/children/watch-null-sink` from the Patina repo.",
+  "Bumped folder-watch-actor patch version from 0.1.0 to 0.1.1 in Cargo.toml and child.toml for the corrected release unit.",
+]
+blocked_by = []
+implementation_plan = [
+  "[x] Inspect folder-watch-actor WIT imports, manifest needs, and Rust usage to classify imports as required, implied by SDK, or stale.",
+  "[x] Remove stale imports/dependency declarations from wit/world.wit and Cargo component metadata rather than broadening authority.",
+  "[x] Add or keep only manifest toy needs that are actually required by implementation/runtime contract.",
+  "[x] Re-run diagnostics and build checks; iterate until least-authority alignment passes.",
+  "[x] Record closure evidence and any follow-up questions before completing the Slate.",
+]
+belief_harvest_decision = "no new belief; applied existing least-authority WIT/manifest alignment practice to this child"
+created_at = "1779291900"
+updated_at = "1779323100"
+closed_at = "1779292700"

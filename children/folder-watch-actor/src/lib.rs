@@ -69,6 +69,26 @@ struct ObservedFile {
     fingerprint: StoredFingerprint,
 }
 
+#[derive(Debug, Clone, Copy)]
+enum ObservedChangeKind {
+    Created,
+    Modified,
+    Deleted,
+}
+
+#[derive(Debug, Clone)]
+struct ObservedChange {
+    watcher: String,
+    stream_name: String,
+    change_kind: ObservedChangeKind,
+    absolute_path: String,
+    relative_path: String,
+    size_bytes: Option<u64>,
+    modified_unix_ms: Option<u64>,
+    sha256: Option<String>,
+    detected_at: String,
+}
+
 fn state_bucket() -> Result<toys::keyvalue::Bucket, String> {
     toys::keyvalue::open("default")
 }
@@ -110,11 +130,11 @@ fn stored_to_contract_stats(stored: &StoredStats) -> watch_types::WatcherStats {
     }
 }
 
-fn contract_to_json_change(change: &watch_types::FileChange) -> serde_json::Value {
+fn observed_change_to_json(change: &ObservedChange) -> serde_json::Value {
     let change_kind = match change.change_kind {
-        watch_types::ChangeKind::Created => "created",
-        watch_types::ChangeKind::Modified => "modified",
-        watch_types::ChangeKind::Deleted => "deleted",
+        ObservedChangeKind::Created => "created",
+        ObservedChangeKind::Modified => "modified",
+        ObservedChangeKind::Deleted => "deleted",
     };
 
     serde_json::json!({
@@ -297,7 +317,7 @@ fn derive_changes(
     previous: &HashMap<String, StoredFingerprint>,
     current: &HashMap<String, ObservedFile>,
     emit_existing_on_start: bool,
-) -> Vec<watch_types::FileChange> {
+) -> Vec<ObservedChange> {
     let mut events = Vec::new();
     let now = Utc::now().to_rfc3339();
     let previous_empty = previous.is_empty();
@@ -310,10 +330,10 @@ fn derive_changes(
         match previous.get(&key) {
             None => {
                 if !previous_empty || emit_existing_on_start {
-                    events.push(watch_types::FileChange {
+                    events.push(ObservedChange {
                         watcher: "folder-watch-actor".to_string(),
                         stream_name: stream.to_string(),
-                        change_kind: watch_types::ChangeKind::Created,
+                        change_kind: ObservedChangeKind::Created,
                         absolute_path: observed.absolute_path.clone(),
                         relative_path: observed.relative_path.clone(),
                         size_bytes: Some(observed.fingerprint.size_bytes),
@@ -328,10 +348,10 @@ fn derive_changes(
                     || old.size_bytes != observed.fingerprint.size_bytes
                     || old.modified_unix_ms != observed.fingerprint.modified_unix_ms
                 {
-                    events.push(watch_types::FileChange {
+                    events.push(ObservedChange {
                         watcher: "folder-watch-actor".to_string(),
                         stream_name: stream.to_string(),
-                        change_kind: watch_types::ChangeKind::Modified,
+                        change_kind: ObservedChangeKind::Modified,
                         absolute_path: observed.absolute_path.clone(),
                         relative_path: observed.relative_path.clone(),
                         size_bytes: Some(observed.fingerprint.size_bytes),
@@ -358,10 +378,10 @@ fn derive_changes(
             .unwrap_or(&key)
             .to_string();
 
-        events.push(watch_types::FileChange {
+        events.push(ObservedChange {
             watcher: "folder-watch-actor".to_string(),
             stream_name: stream.to_string(),
-            change_kind: watch_types::ChangeKind::Deleted,
+            change_kind: ObservedChangeKind::Deleted,
             absolute_path: key,
             relative_path,
             size_bytes: None,
@@ -376,7 +396,7 @@ fn derive_changes(
 
 fn emit_events(
     stream_name: &str,
-    events: &[watch_types::FileChange],
+    events: &[ObservedChange],
 ) -> Result<(u64, u64, u64, u64), String> {
     if events.is_empty() {
         return Ok((0, 0, 0, 0));
@@ -389,22 +409,22 @@ fn emit_events(
 
     for change in events {
         let topic = match change.change_kind {
-            watch_types::ChangeKind::Created => {
+            ObservedChangeKind::Created => {
                 created += 1;
                 "file-created"
             }
-            watch_types::ChangeKind::Modified => {
+            ObservedChangeKind::Modified => {
                 modified += 1;
                 "file-modified"
             }
-            watch_types::ChangeKind::Deleted => {
+            ObservedChangeKind::Deleted => {
                 deleted += 1;
                 "file-deleted"
             }
         };
 
         let payload =
-            serde_json::to_vec(&contract_to_json_change(change)).map_err(|e| e.to_string())?;
+            serde_json::to_vec(&observed_change_to_json(change)).map_err(|e| e.to_string())?;
         let message = wasi::messaging::types::Message {
             topic: topic.to_string(),
             content_type: Some("application/json".to_string()),

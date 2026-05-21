@@ -1,6 +1,6 @@
 [child]
 name = "folder-watch-actor"
-version = "0.1.0"
+version = "0.1.1"
 kind = "child"
 role = "app"
 patina_min = "0.71.0"
