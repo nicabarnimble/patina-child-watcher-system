@@ -28,4 +28,5 @@ impl exports::patina::watch::events::Guest for WatchNullSink {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 export!(WatchNullSink);

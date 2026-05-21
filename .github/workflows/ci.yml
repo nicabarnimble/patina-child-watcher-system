@@ -33,8 +33,8 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
-  tier-2-check:
-    name: Tier 2 — check
+  tier-2-tests:
+    name: Tier 2 — tests
     runs-on: ubuntu-latest
     needs: [tier-1-style-and-lint]
 
@@ -48,13 +48,13 @@ jobs:
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
 
-      - name: Check
-        run: cargo check --workspace
+      - name: Test
+        run: cargo test --workspace --all-targets
 
   tier-3-component-build:
     name: Tier 3 — component build
     runs-on: ubuntu-latest
-    needs: [tier-2-check]
+    needs: [tier-2-tests]
 
     steps:
       - name: Checkout
